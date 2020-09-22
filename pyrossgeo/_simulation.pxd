@@ -8,9 +8,10 @@ from pyrossgeo.__defs__ cimport node, cnode, transporter, model_term, DTYPE_t
 from pyrossgeo.__defs__ import DTYPE
 from pyrossgeo.Simulation cimport Simulation
 
-cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_end, object _dts, int steps_per_save=*,
-                            str save_path=*, bint only_save_nodes=*, int steps_per_print=*,
-                            int random_seed=*)
+cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_end,
+     	      object _dts, int steps_per_save=*,
+              str save_path=*, bint only_save_nodes=*, int steps_per_print=*,
+              int random_seed=*, int fij_form=*)
 
 
 cdef extern from "<random>" namespace "std":

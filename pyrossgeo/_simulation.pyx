@@ -19,9 +19,10 @@ from pyrossgeo.__defs__ import DTYPE, contact_scaling_types
 @cython.boundscheck(True)
 @cython.cdivision(False)
 @cython.nonecheck(True)
-cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_end, object _dts, int steps_per_save=-1,
-                            str save_path="", bint only_save_nodes=False, int steps_per_print=-1,
-                            int random_seed=-1):
+cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_end,
+              object _dts, int steps_per_save=-1,
+              str save_path="", bint only_save_nodes=False, int steps_per_print=-1,
+              int random_seed=-1, int fij_form=1):
 
     if not self.has_been_initialized:
         raise Exception("Must initialise before starting simulation.")
@@ -326,7 +327,7 @@ cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_en
     ####################################################################
     #### Simulation ####################################################
     ####################################################################
-
+    print("fij_form ", fij_form)
     t = t_start
 
     for step_i in range(steps):
@@ -394,7 +395,7 @@ cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_en
 
             for i in range(age_groups):
                 for j in range(age_groups):
-
+                    _f = 0.0
                     _g = Ns[loc, i]*Ns[loc, j] * location_r_area[loc]*location_r_area[loc]
                     _cg = cNs[loc, i]*cNs[loc, j] * commuterverse_r_area[loc]*commuterverse_r_area[loc]
 
@@ -429,26 +430,38 @@ cdef simulate(Simulation self, DTYPE_t[:] X_state, DTYPE_t t_start, DTYPE_t t_en
                         print("---")
                     
                     if _g != 0 and _g==_g:
-                        _f = libc.math.sqrt( total_N[i] * Ns[loc, j] / (Ns[loc, i] * total_N[j]) )
-                        #_f = total_N[i] / Ns[loc, i]
+                        if fij_form == 0:
+                            _f = total_N[i]/Ns[loc, i]
+                        else:
+                            _f = libc.math.sqrt( total_N[i] * Ns[loc, j] / (Ns[loc, i] * total_N[j]) )
                         cmat_scaling_fg[loc,i,j] = _f*_g
-                        cmat_scaling_a[i,j] += Ns[loc, i]*cmat_scaling_fg[loc,i,j]
-                        #cmat_scaling_a[i,j] += cmat_scaling_fg[loc,i,j]
+                        if fij_form == 0:
+                            cmat_scaling_a[i,j] += _g
+                        else:
+                            cmat_scaling_a[i,j] += Ns[loc, i]*cmat_scaling_fg[loc,i,j]
+                            #cmat_scaling_a[i,j] += cmat_scaling_fg[loc,i,j]
                     else:
                         cmat_scaling_fg[loc,i,j] = 0
 
                     if _cg != 0 and _cg==_cg:
-                        _f = libc.math.sqrt( total_N[i] * cNs[loc, j] / (cNs[loc, i] * total_N[j]) )
+                        if fij_form == 0:
+                            _f = total_N[i]/cNs[loc, i]
+                        else:
+                            _f = libc.math.sqrt( total_N[i] * cNs[loc, j] / (cNs[loc, i] * total_N[j]) )
                         #_f = total_N[i] / cNs[loc, i]
                         cmat_scaling_fg_cverse[loc,i,j] = _f*_cg
-                        cmat_scaling_a[i,j] += cNs[loc, i]*cmat_scaling_fg_cverse[loc,i,j]
+                        if fij_form == 0:
+                            cmat_scaling_a[i,j] += _cg
+                        else:
+                            cmat_scaling_a[i,j] += cNs[loc, i]*cmat_scaling_fg_cverse[loc,i,j]
                         #cmat_scaling_a[i,j] += cmat_scaling_fg_cverse[loc,i,j]
                     else:
                         cmat_scaling_fg_cverse[loc,i,j]=0
 
-        for i in range(age_groups):
-            for j in range(age_groups):
-                cmat_scaling_a[i,j] = cmat_scaling_a[i,j] / total_N[i]
+        if fij_form != 0:
+            for i in range(age_groups):
+                for j in range(age_groups):
+                    cmat_scaling_a[i,j] = cmat_scaling_a[i,j] / total_N[i]
 
         # Normalize cmat_scaling_fg and cmat_scaling_fg_cverse using cmat_scaling_a
 

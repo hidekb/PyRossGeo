@@ -85,7 +85,8 @@ cdef class Simulation:
                         cnode_populations_dat)
 
     def simulate(self, X_state, t_start, t_end, dts, steps_per_save=-1,
-                    save_path="", only_save_nodes=False, steps_per_print=-1):
+                 save_path="", only_save_nodes=False, steps_per_print=-1,
+                 random_seed=-1, fij_form=1):
         """Simulates the system.
         
         Simulates the system between times `t_start` and `t_end`, with the 
@@ -129,7 +130,8 @@ cdef class Simulation:
                 to age-bracket, class, home, origin, destination respectively.
         """
         return simulate(self, X_state, t_start, t_end, dts, steps_per_save,
-                    save_path, only_save_nodes, steps_per_print)
+                        save_path, only_save_nodes, steps_per_print,
+                        random_seed, fij_form)
 
     def compute(self, X_state, dX_state, t, dt):
         """Computes the right-hand side of the dynamical system.
